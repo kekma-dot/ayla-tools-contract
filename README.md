@@ -1,70 +1,57 @@
-# ayla-tools-contract
+![Ayla Contract](assets/banner.png)
 
-![ayla-tools banner](assets/banner.png)
+# Ayla Contract
 
-Shared **UI-free signal contract** for the Ayla tools family of [Pi](https://github.com/earendil-works/pi) extensions.
+[Русский](README.ru.md)
 
-It is a tiny, dependency-free module that lets several independent Pi extensions installed in the same process publish small status signals (quota, voice, memory, transport, working) into one process-wide store, so a footer/status renderer can read them all without the producers knowing about each other.
-
-Русская версия: [README.ru.md](README.ru.md).
-
-## What it is — and what it is not
-
-- **Is:** a plain ESM module with five functions. No Pi SDK imports, no UI, no I/O, no timers, no network. It can be loaded and tested anywhere Node runs.
-- **Is not:** a framework, an event bus, or a Pi extension by itself. It renders nothing and reacts to nothing; producers and consumers stay decoupled through plain data.
-
-The store lives in a `Symbol.for("ayla.footer.signals.v1")` slot on `globalThis`, so every copy of this module loaded in one Pi process (even from different packages or after a module reload) sees the same store.
+A shared status store for extensions running in the same Node process. Producers publish signals; a footer or status renderer reads them. No runtime dependencies, Pi imports, timers or network access. Requires Node 22.18 or newer.
 
 ## Install
 
-This is a **developer library**, not a Pi extension. You do not install it with `pi install` for visible functionality. It is not published to the npm registry; install its public Git source in a Node project:
+Install in your extension's Node project:
 
 ```sh
 npm install git+https://github.com/kekma-dot/ayla-tools-contract.git
 ```
 
-Then the import below works. Commit your generated lockfile to pin the resolved revision. A Pi-package author may instead bundle an exact copy of `index.mjs`, retaining the MIT license and recording its SHA-256. The unchanged `Symbol.for("ayla.footer.signals.v1")` key lets copies share the same process-wide store.
+Commit the generated lockfile to pin the revision. This is a library, so installing it with `pi install` adds no visible functionality. It is not published to npm.
 
-## Quickstart (5 lines)
+## Usage
 
 ```js
 import { publishSignal, readSignals } from "ayla-tools-contract";
 
-publishSignal("voice", { state: "connected", microphone: "ok" }); // producer owns one scope
-console.log(readSignals().voice);                                  // consumer reads a snapshot
-publishSignal("voice", undefined);                                 // clears only the "voice" scope
+publishSignal("voice", { state: "connected", microphone: "ok" });
+console.log(readSignals().voice);
+publishSignal("voice", undefined);
 ```
+
+The last call clears only the `voice` signal. Each producer should update and clear its own scope.
 
 ## API
 
 | Function | Behavior |
 |---|---|
-| `signalStore()` | Returns the process-wide store object, creating it on first use. |
-| `publishSignal(scope, value)` | Writes `value` into one scope. Each producer owns exactly one scope. `undefined` clears **only that scope**. |
-| `readSignals()` | Returns a fresh shallow snapshot `{ quota, voice, memory, transport, working }`; unset scopes are `null`. Scope objects are shared references — treat them as read-only. |
-| `resetSignals()` | Test helper: replaces the whole store. Production consumers must never call it — it erases other producers. |
-| `formatCountdown(ms)` | Formats a millisecond countdown as `59m` / `1h30m` / `2d1h`; returns `""` for non-finite or elapsed values. |
+| `signalStore()` | Returns the shared store, creating it on first use. |
+| `publishSignal(scope, value)` | Sets one scope. `undefined` clears that scope. |
+| `readSignals()` | Returns a shallow snapshot of `quota`, `voice`, `memory`, `transport` and `working`. Unset scopes are `null`; nested objects remain shared references. |
+| `resetSignals()` | Replaces the entire store. For tests only: it clears other producers' signals too. |
+| `formatCountdown(ms)` | Formats milliseconds as `59m`, `1h30m` or `2d1h`. Returns `""` for elapsed or non-finite values. |
 
-Contract scopes are fixed: `quota`, `voice`, `memory`, `transport`, `working`. Producers may technically write other keys into the store, but `readSignals()` only reports the contract scopes.
+The store uses `Symbol.for("ayla.footer.signals.v1")` on `globalThis`. Multiple copies of the module share state, including after an in-process reload. Restarting the process clears it.
 
-## Guarantees and limits
+Signal payloads are not validated. Use trusted constants for scopes and treat returned objects as read-only. Any extension in the process can access the store; never put credentials or private content in it.
 
-- Process-wide by design: state survives an in-process module reload (`/reload`) and is shared between co-loaded packages. Only a full process restart resets it.
-- No validation of signal payloads: producers and consumers agree on shapes by convention, per scope. Scopes must be trusted extension constants, not untrusted tool/network input. Ownership is a convention, not an access-control boundary: any extension in the process can read or change the store. Never put credentials or private content in signals.
-- Node.js ≥ 22.18.
+You may bundle `index.mjs` in another extension. Preserve its MIT license, record the source revision and hash, and keep the symbol key unchanged.
 
-## Tests
+## Development
 
-```bash
+```sh
 npm test
 ```
 
-Pure Node tests (`node --test`): no Pi, no UI and no network.
+Tests use Node's built-in runner and need no Pi installation. To remove the library, remove the dependency or bundled copy from its consumer.
 
-## Uninstall
+## License
 
-Nothing is written outside `node_modules` or the consumer's own bundled copy; delete the dependency or the bundled file with its consumer.
-
-## Provenance and license
-
-MIT — owner-created code by kekma-dot, see [LICENSE](LICENSE). No third-party code is bundled; there are no runtime dependencies. Curated from the private Ayla tools monorepo (`pi-ayla-contract` @ `af75d954`, see `provenance.json`). Provenance uncertainty: the private upstream history is not public; no conflicting upstream license is known. The MOTH banner was generated with GPT Image and is distributed on the same MIT terms, without an exclusivity guarantee for AI-assisted artwork.
+[MIT](LICENSE).
