@@ -1,0 +1,37 @@
+{
+  "name": "ayla-tools-contract",
+  "version": "0.1.0",
+  "description": "Shared UI-free signal contract for Ayla tools Pi extensions: a process-wide footer signal store with owner-scoped producers. No Pi SDK, UI, I/O, or timers.",
+  "type": "module",
+  "license": "MIT",
+  "author": "kekma-dot",
+  "keywords": [
+    "ayla-tools",
+    "contract",
+    "signals",
+    "library"
+  ],
+  "exports": "./index.mjs",
+  "files": [
+    "index.mjs",
+    "assets/",
+    "LICENSE",
+    "README.md",
+    "README.ru.md",
+    "provenance.json"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kekma-dot/ayla-tools-contract.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kekma-dot/ayla-tools-contract/issues"
+  },
+  "homepage": "https://github.com/kekma-dot/ayla-tools-contract#readme"
+}
